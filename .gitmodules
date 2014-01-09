@@ -1,0 +1,3 @@
+[submodule "ext/TinyGPSPlus"]
+	path = ext/TinyGPSPlus
+	url = https://github.com/mikalhart/TinyGPSPlus.git
