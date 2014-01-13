@@ -4,3 +4,6 @@
 [submodule "ext/Adafruit_CC3000_Library"]
 	path = ext/Adafruit_CC3000_Library
 	url = https://github.com/adafruit/Adafruit_CC3000_Library.git
+[submodule "ext/arduino-base64"]
+	path = ext/Base64
+	url = https://github.com/adamvr/arduino-base64.git
