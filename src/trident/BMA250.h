@@ -29,17 +29,17 @@ public:
   {
   }
 
-  int accelX() const
+  uint16_t accelX() const
   {
     return m_accelX;
   }
 
-  int accelY() const
+  uint16_t accelY() const
   {
     return m_accelY;
   }
 
-  int accelZ() const
+  uint16_t accelZ() const
   {
     return m_accelZ;
   }
@@ -61,7 +61,7 @@ public:
     Wire.endTransmission();
   }
   
-  int temperature() const
+  float temperature() const
   {
     return m_temperature;
   }
@@ -99,9 +99,9 @@ private:
   static int const I2CADDR = 0x18;
   static Range const RANGE_DEFAULT = RANGE_2G;
 
-  int m_accelX;
-  int m_accelY;
-  int m_accelZ;
+  uint16_t m_accelX;
+  uint16_t m_accelY;
+  uint16_t m_accelZ;
 
   Bandwidth const m_bandwidth;
   Range const m_range;
