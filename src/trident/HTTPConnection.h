@@ -3,115 +3,52 @@
 
 #include "NetworkConnection.h"
 
-#include <Base64.h>
+#include "globals.h"
+
+//#include <Base64.h>
 
 typedef char const *(*HTTPCallback)(void * io_callbackPointer);
 
 class HTTPConnection
 {
 public:
-  HTTPConnection(char const * const i_domain, NetworkConnection &i_network)
-  :m_domain(NULL),m_flags(FLAG_DEFAULT),m_network(&i_network),m_responseExpected(false)
+  HTTPConnection(char const * const i_domain, __FlashStringHelper const * const i_authBase64)
+  :m_authBase64(i_authBase64),m_domain(i_domain),m_flags(FLAG_DEFAULT)
   {
-    size_t const domainSizeBytes = strlen(i_domain)+1;
-    m_domain = new char[domainSizeBytes];
-    if(m_domain != NULL)
-    {
-      memcpy(m_domain, i_domain, domainSizeBytes);
-    }
   }
   
   ~HTTPConnection()
   {
-    if(m_domain != NULL)
-    {
-      delete[] m_domain;
-      m_domain = NULL;
-    }
   }
   
-  bool acquire(uint32_t const i_budget_ms)
-  {
-    uint32_t timeStart = millis();
-    
-    if(m_domain == NULL)
-    {
-      return false;
-    }
-    
-    while(m_status != STATUS_CONNECTED)
-    {
-      if(m_status == STATUS_DISCONNECTED)
-      {
-        m_network->cc().getHostByName(m_domain, &m_ip);
-        m_status = STATUS_RESOLVING;
-        m_timeResolvingStart = millis();
-        Serial.println("HTP: Resolving '"+String(m_domain)+"'...");
-      }
-      else if(m_status == STATUS_RESOLVING)
-      {
-        if(m_network->cc().getHostByName(m_domain, &m_ip))
-        {
-          m_status = STATUS_RESOLVED;
-          m_timeResolvedStart = millis();
-          Serial.println("HTP: Resolved '"+String(m_domain)+"' to "+String(m_ip));
-        }
-      }
-      else if(m_status == STATUS_RESOLVED)
-      {
-        m_client = m_network->cc().connectTCP(m_ip, msc_httpPort);
-        m_status = STATUS_OPENING;
-        m_timeOpeningStart = millis();
-        Serial.println("HTP: Opening "+String(m_ip)+":"+String(msc_httpPort)+"...");
-      }
-      else if(m_status == STATUS_OPENING)
-      {
-        if(m_client.connected())
-        {
-          m_status = STATUS_CONNECTED;
-          m_timeConnectedStart = millis();
-          Serial.println("Connected to '"+String(m_domain)+"'");
-        }
-      }
-      
-      /***** Check time *****/
-      if(timeSince_ms(timeStart) > i_budget_ms)
-      {
-        return false;
-      }
-      
-      /***** Maybe network is down *****/
-      if(timeSince_ms(m_timeResolvingStart) > msc_timeoutNetwork_ms)
-      {
-        this->lost();
-        m_network->lost();
-      }
-    }
-    
-    return true;
-  }
+  bool acquire(uint32_t const i_timeStart_ms, uint32_t const i_budget_ms);
   
   void lost()
   {
     m_client.close();
-    m_status = STATUS_DISCONNECTED;
-    m_timeDisconnectedStart = millis();
-    Serial.println("HTP: Connection lost.");
+    m_status = STATUS_ONLINE;
+    TRIDENT_INFO(F("HTTP lost"));
   }
   
-  bool read(uint32_t const i_budget_ms)
+  void lostTotally()
   {
-    uint32_t timeStart = millis();
-    
+    m_client.close();
+    m_status = STATUS_OFFLINE;
+    TRIDENT_INFO("HTTP off");
+    m_network.lost();
+  }
+#if 0
+  bool read(uint32_t const i_timeStart_ms, uint32_t const i_budget_ms)
+  {
     while(true)
     {
       /***** Check time *****/
-      if(timeSince_ms(timeStart) > i_budget_ms)
+      if(timeSince_ms(i_timeStart_ms) > i_budget_ms)
       {
         return false;
       }
       
-      if(!this->acquire(i_budget_ms))
+      if(!this->acquire(i_timeStart_ms, i_budget_ms))
       {
         continue;
       }
@@ -122,7 +59,7 @@ public:
       }
       else if(!m_client.available())
       {
-        if(m_responseExpected && timeSince_ms(m_timeLastWrite) > msc_timeoutConnection_ms)
+        if(this->responseExpected() && timeSince_ms(m_timeLastWrite) > msc_timeoutConnection_ms)
         {
           this->lost();
         }
@@ -132,10 +69,10 @@ public:
       while(m_client.available())
       {
         m_client.read();
-        m_responseExpected = false;
+        this->setResponseExpected(false);
         
         /***** Check time *****/
-        if(timeSince_ms(timeStart) > i_budget_ms)
+        if(timeSince_ms(i_timeStart_ms) > i_budget_ms)
         {
           return true;
         }
@@ -144,79 +81,78 @@ public:
       return true;
     }
   }
+#endif
+  bool responseExpected() const
+  {
+    return (m_flags & FLAG_RESPONSE_EXPECTED);
+  }
   
-  void setAuthenticationBasic(char const * const i_authString)
+  /*
+  bool setAuthenticationBasic(char const * const i_authString)
   {
     if(i_authString != NULL)
     {
       size_t const authStringLength = strlen(i_authString);
-      size_t const authStringSizeBytes = authStringLength+1;
-      char *authString = new char[authStringLength];
-      if(authString == NULL)
-      {
-        return;
-      }
       
-      memcpy(authString, i_authString, authStringSizeBytes);
-      base64_encode(m_authBase64, authString, authStringLength);
-      delete[] authString;
+      //http://stackoverflow.com/questions/1533113/calculate-the-size-to-a-base-64-encoded-message
+      size_t const b64CodeLength = ((authStringLength*4)/3);
+      size_t const b64PaddingLength = ((authStringLength%3) ? (3-(authStringLength%3)) : 0);
+      size_t const b64CRLFLength = 2+(2*(authStringLength+b64PaddingLength)/72);
+      size_t const b64TotalSizeBytes = b64CodeLength + b64PaddingLength + b64CRLFLength + 1;
+      char * const b64 = new char[b64TotalSizeBytes];
+      if(b64 == NULL)
+      {
+        return false;
+      }
+      if(m_authBase64 != NULL)
+      {
+        delete[] m_authBase64;
+      }
+      m_authBase64 = b64;
+      
+      base64_encode(m_authBase64, const_cast<char *>(i_authString), authStringLength);
       m_flags |= FLAG_AUTH_BASIC;
-      Serial.println("HTP: Using basic authentication.");
+      TRIDENT_INFO("HTTP Basic");
+      return true;
     }
     else
     {
       m_flags &= ~FLAG_AUTH_BASIC;
-      Serial.println("HTP: Using no authentication.");
+      if(m_authBase64 != NULL)
+      {
+        delete[] m_authBase64;
+      }
+      TRIDENT_INFO("HTTP None");
+    }
+  }
+  */
+  
+  void setResponseExpected(bool const i_responseExpected)
+  {
+    if(i_responseExpected)
+    {
+      m_flags |= FLAG_RESPONSE_EXPECTED;
+    }
+    else
+    {
+      m_flags &= (~FLAG_RESPONSE_EXPECTED);
     }
   }
   
   void setup()
   {
-    this->acquire(msc_timeoutConnection_ms);
+    m_network.setup();
+    
+    TRIDENT_INFO("HTTP");
   }
   
-  void update(uint32_t i_budget_ms)
+  void update(uint32_t const i_timeStart_ms, uint32_t const i_budget_ms)
   {
-    this->acquire(i_budget_ms);
+    m_network.update(i_timeStart_ms, i_budget_ms);
+    this->acquire(i_timeStart_ms, i_budget_ms);
   }
   
-  void update()
-  {
-  }
-  
-  bool writePost(char const * const i_uri, char const * const i_data, uint32_t const i_budget_ms)
-  {
-    if(!this->acquire(i_budget_ms))
-    {
-      return false;
-    }
-    
-    m_client.fastrprint("POST ");
-    m_client.fastrprint(i_uri);
-    m_client.fastrprintln(" HTTP/1.1");
-    
-    if(m_flags & FLAG_AUTH_BASIC)
-    {
-      m_client.fastrprint("Authorization: Basic ");
-      m_client.fastrprintln(m_authBase64);
-    }
-    
-    m_client.fastrprint("Host: ");
-    m_client.fastrprintln(m_domain);
-    
-    m_client.fastrprint("Content-Length: ");
-    m_client.println(strlen(i_data));
-    
-    m_client.fastrprintln("Content-Type:application/json");
-    m_client.println();
-    
-    m_client.fastrprintln(i_data);
-    
-    m_timeLastWrite=millis();
-    m_responseExpected = true;
-    return true;
-  }
-  
+  bool writePost(const __FlashStringHelper * const i_uri, char const * const i_data, uint32_t const i_timeStart_ms, uint32_t const i_budget_ms);
 private:
   static uint32_t const msc_timeoutNetwork_ms=5000;
   static uint32_t const msc_timeoutConnection_ms=5000;
@@ -225,31 +161,27 @@ private:
   enum Flags
   {
     FLAG_DEFAULT=0,
-    FLAG_AUTH_BASIC=(1<<0),
+    FLAG_RESPONSE_EXPECTED=(1<<0)
   };
   
   enum Status
   {
-    STATUS_DISCONNECTED=0,
-    STATUS_RESOLVING=1,
-    STATUS_RESOLVED=2,
-    STATUS_OPENING=3,
-    STATUS_CONNECTED=4
+    STATUS_OFFLINE=0,
+    STATUS_ONLINE,
+    STATUS_RESOLVING,
+    STATUS_RESOLVED,
+    STATUS_OPENING,
+    STATUS_CONNECTED
   };
   
-  char m_authBase64[256];
+  __FlashStringHelper const * const m_authBase64;
   Adafruit_CC3000_Client m_client;
-  char *m_domain;
-  uint32_t m_flags;
+  char const * const m_domain;
+  uint8_t m_flags;
   uint32_t m_ip;
-  NetworkConnection *m_network;
-  bool m_responseExpected;
-  HTTPConnection::Status m_status;
-  uint32_t m_timeDisconnectedStart;
+  NetworkConnection m_network;
+  Status m_status;
   uint32_t m_timeResolvingStart;
-  uint32_t m_timeResolvedStart;
-  uint32_t m_timeOpeningStart;
-  uint32_t m_timeConnectedStart;
   uint32_t m_timeLastWrite;
 };
 

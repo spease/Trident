@@ -1,64 +1,32 @@
 #ifndef _TEMPODB_H_
 #define _TEMPODB_H_
 
+#include "globals.h"
 #include "HTTPConnection.h"
 #include "NetworkConnection.h"
 
-class TempoDB
-{
-public:
-  enum Series
-  {
-    GPS_LATITUDE=0,
-    GPS_LONGITUDE,
-    GPS_SATELLITES,
-    ACL_X,
-    ACL_Y,
-    ACL_Z,
-    ACL_TEMPERATURE,
-    TMP_TEMPERATURE,
-    HMD_HUMIDITY
-  };
-  static char const * const msc_seriesKey[];
-  
-  TempoDB(NetworkConnection &i_network)
-  :m_connection(msc_apiServer, i_network)
-  {
-  }
-  
-  void setup()
-  {
-    m_connection.setup();
-    m_connection.setAuthenticationBasic(msc_auth);
-  }
-  
-  void update(uint32_t const i_budget_ms)
-  {
-    m_connection.update(i_budget_ms);
-  }
-  
-  void postSeriesUINT16(Series const i_series, uint16_t const i_value, uint32_t const i_budget_ms)
-  {
-    char uriString[128];
-    char valueString[64];
-    snprintf(valueString, sizeof(valueString)-1, "[{\"v\":%d}]", i_value);
-    snprintf(uriString, sizeof(uriString)-1, "/%s/series/key/%s/data/", msc_apiVersion, msc_seriesKey[i_series]);
-    m_connection.writePost(uriString, valueString, i_budget_ms);
-  }
-  
-  void postSeriesDouble(Series const i_series, double const i_value, uint32_t const i_budget_ms)
-  {
-    char uriString[128];
-    char valueString[64];
-    snprintf(valueString, sizeof(valueString)-1, "[{\"v\":%2.6f}]", i_value);
-    snprintf(uriString, sizeof(uriString)-1, "/%s/series/key/%s/data/", msc_apiVersion, msc_seriesKey[i_series]);
-    m_connection.writePost(uriString, valueString, i_budget_ms);
-  }
-  
-private:
-  static char const * const msc_apiServer;
-  static char const * const msc_apiVersion;
-  static char const * const msc_auth;
+TEMPODB_SERIES_KEY(GPS_LATITUDE, "GPS.Latitude.");
+TEMPODB_SERIES_KEY(GPS_LONGITUDE, "GPS.Longitude.");
+TEMPODB_SERIES_KEY(GPS_SATELLITES, "GPS.Satellites.");
+TEMPODB_SERIES_KEY(ACL_X, "ACL.AccelerationX.");
+TEMPODB_SERIES_KEY(ACL_Y, "ACL.AccelerationY.");
+TEMPODB_SERIES_KEY(ACL_Z, "ACL.AccelerationZ.");
+TEMPODB_SERIES_KEY(ACL_TEMPERATURE, "ACL.Temperature.");
+TEMPODB_SERIES_KEY(TMP_TEMPERATURE, "TMP.Temperature.");
+TEMPODB_SERIES_KEY(HMD_HUMIDITY, "HMD.Humidity.");
+
+static __FlashStringHelper const * const TEMPODB_SERIES_URIS[] = {
+  TEMPODB_SERIES_URI(GPS_LATITUDE),
+  TEMPODB_SERIES_URI(GPS_LONGITUDE),
+  TEMPODB_SERIES_URI(GPS_SATELLITES),
+  TEMPODB_SERIES_URI(ACL_X),
+  TEMPODB_SERIES_URI(ACL_Y),
+  TEMPODB_SERIES_URI(ACL_Z),
+  TEMPODB_SERIES_URI(ACL_TEMPERATURE),
+  TEMPODB_SERIES_URI(TMP_TEMPERATURE),
+  TEMPODB_SERIES_URI(HMD_HUMIDITY),
+};
+
   /*
   static char const * const msc_sensorID[] = {
     "606904c78caa4fac89723293075951a6",
@@ -67,23 +35,45 @@ private:
     "32082e08691b4a2f8ed245b17078921c"
   };
   */
+
+class TempoDB
+{
+public:
+  enum Series
+  {
+    GPS_LATITUDE=0,
+    GPS_LONGITUDE=1,
+    GPS_SATELLITES=2,
+    ACL_X=3,
+    ACL_Y=4,
+    ACL_Z=5,
+    ACL_TEMPERATURE=6,
+    TMP_TEMPERATURE=7,
+    HMD_HUMIDITY=8
+  };
   
+  TempoDB()
+  :m_connection(TRIDENT_TEMPODB_API_SERVER, reinterpret_cast<__FlashStringHelper const *>(TRIDENT_TEMPODB_API_KEY_BASE64))
+  {
+  }
+  
+  void setup()
+  {
+    m_connection.setup();
+    
+    TRIDENT_INFO("TDB");
+  }
+  
+  void update(uint32_t const i_timeStart_ms, uint32_t const i_budget_ms)
+  {
+    m_connection.update(i_timeStart_ms, i_budget_ms);
+  }
+  
+  void postSeriesUINT16(Series const i_series, uint16_t const i_value, uint32_t const i_timeStart_ms, uint32_t const i_budget_ms);
+  void postSeriesDouble(Series const i_series, double const i_value, uint32_t const i_timeStart_ms, uint32_t const i_budget_ms);
+  
+private:
   HTTPConnection m_connection;
 };
-
-char const * const TempoDB::msc_apiServer="api.tempo-db.com";
-char const * const TempoDB::msc_apiVersion="v1";
-char const * const TempoDB::msc_auth="048cee316ae74274bb4b2f7730eba236:25f9d7663f7147a2a5cf0b5635f0a28a";
-char const * const TempoDB::msc_seriesKey[] = {
-    "device:1.GPS.Latitude.",
-    "device:1.GPS.Longitude.",
-    "device:1.GPS.Satellites.",
-    "device:1.ACL.AccelerationX.",
-    "device:1.ACL.AccelerationY.",
-    "device:1.ACL.AccelerationZ.",
-    "device:1.ACL.Temperature.",
-    "device:1.TMP.Temperature",
-    "device:1.HMD.Humidity",
-  };
 
 #endif /* _TEMPODB_H_ */

@@ -5,11 +5,17 @@
 #include <TinyGPS++.h>
 #include <SoftwareSerial.h>
 
+PROGMEM static int const SENSORGPS_BAUD = 9600;
+PROGMEM static int const SENSORGPS_pinPower = A3;
+PROGMEM static int const SENSORGPS_pinPowerStatus = A2;
+PROGMEM static int const SENSORGPS_pinRX = A1;
+PROGMEM static int const SENSORGPS_pinTX = A0;
+
 class SensorGPS
 {
 public:
   SensorGPS()
-  :m_link(msc_pinRX, msc_pinTX)
+  :m_link(SENSORGPS_pinRX, SENSORGPS_pinTX)
   {}
   
   TinyGPSPlus &data()
@@ -19,41 +25,35 @@ public:
   
   void setup()
   {
-    pinMode(msc_pinPower, OUTPUT);
-    pinMode(msc_pinPowerStatus, INPUT);
-    digitalWrite(msc_pinPower, LOW);
+    TRIDENT_INFO(F("GPS"));
+    
+    pinMode(SENSORGPS_pinPower, OUTPUT);
+    pinMode(SENSORGPS_pinPowerStatus, INPUT);
+    digitalWrite(SENSORGPS_pinPower, LOW);
     delay(5);
-    if(digitalRead(msc_pinPowerStatus) == LOW)
+    if(digitalRead(SENSORGPS_pinPowerStatus) == LOW)
     {
       //Wake module
-      digitalWrite(msc_pinPower, HIGH);
+      digitalWrite(SENSORGPS_pinPower, HIGH);
       delay(5);
-      digitalWrite(msc_pinPower, LOW);
+      digitalWrite(SENSORGPS_pinPower, LOW);
     }
     
-    m_link.begin(msc_baud);
+    m_link.begin(SENSORGPS_BAUD);
   }
   
-  void update(uint32_t const i_budget_ms)
+  void update(uint32_t const i_timeStart_ms, uint32_t const i_budget_ms)
   {
-    uint32_t timeStart = millis();
-    
     while(m_link.available() > 0)
     {
       m_tinyGPS.encode(m_link.read());
-      if(timeSince_ms(timeStart) >= i_budget_ms)
+      if(timeSince_ms(i_timeStart_ms) >= i_budget_ms)
       {
         return;
       }
     }
   }
 private:
-  static int const msc_baud = 9600;
-  static int const msc_pinPower = A3;
-  static int const msc_pinPowerStatus = A2;
-  static int const msc_pinRX = A1;
-  static int const msc_pinTX = A0;
-  
   TinyGPSPlus m_tinyGPS;
   SoftwareSerial m_link;
 };

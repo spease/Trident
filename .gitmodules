@@ -7,3 +7,6 @@
 [submodule "ext/arduino-base64"]
 	path = ext/Base64
 	url = https://github.com/adamvr/arduino-base64.git
+[submodule "ext/Sensirion"]
+	path = ext/Sensirion
+	url = https://github.com/spease/Sensirion.git

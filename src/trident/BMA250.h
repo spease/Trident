@@ -1,31 +1,39 @@
 #ifndef _BMA250_H_
 #define _BMA250_H_
+#include "globals.h"
+
 #include <Wire.h>
 
+/********************----- ENUM: Bandwidth -----********************/
+enum Bandwidth
+{
+  BMA250_BANDWIDTH_7_81_HZ=0x08,  //7.81Hz (update time of 64ms)
+};
+/**************************************************/
+
+/********************----- ENUM: Range -----********************/
+enum Range
+{
+  BMA250_RANGE_2G = 0x03,
+  BMA250_RANGE_4G = 0x05,
+  BMA250_RANGE_8G = 0x08,
+  BMA250_RANGE_16G = 0x0C
+};
+/**************************************************/
+
+/********************----- BMA250 defaults -----********************/
+PROGMEM static Bandwidth const BMA250_BANDWIDTH_DEFAULT = BMA250_BANDWIDTH_7_81_HZ;
+PROGMEM static int const I2CADDR = 0x18;
+PROGMEM static Range const BMA250_RANGE_DEFAULT = BMA250_RANGE_2G;
+/**************************************************/
+
 /********************----- CLASS: BMA250 -----********************/
+template<Bandwidth t_bandwidth=BMA250_BANDWIDTH_DEFAULT, Range t_range=BMA250_RANGE_DEFAULT>
 class BMA250
 {
 public:
-  /********************----- ENUM: Bandwidth -----********************/
-  enum Bandwidth
-  {
-    BANDWIDTH_7_81_HZ=0x08,  //7.81Hz (update time of 64ms)
-  };
-  /**************************************************/
-
-  /********************----- ENUM: Range -----********************/
-  enum Range
-  {
-    RANGE_2G = 0x03,
-    RANGE_4G = 0x05,
-    RANGE_8G = 0x08,
-    RANGE_16G = 0x0C
-  };
-  /**************************************************/
-
-  BMA250(Bandwidth const i_bandwidth=BANDWIDTH_DEFAULT, Range const i_range=RANGE_DEFAULT)
-  :m_accelX(0),m_accelY(0),m_accelZ(0),
-  m_bandwidth(i_bandwidth),m_range(i_range),m_temperature(0)
+  BMA250()
+  :m_accelX(0),m_accelY(0),m_accelZ(0),m_temperature(0)
   {
   }
 
@@ -46,18 +54,19 @@ public:
 
   void setup()
   {
+    TRIDENT_INFO("BMA");
     Wire.begin();
 
     // Setup the range measurement setting
-    Wire.beginTransmission(BMA250::I2CADDR);
+    Wire.beginTransmission(I2CADDR);
     Wire.write(0x0F); 
-    Wire.write(m_range);
+    Wire.write(t_range);
     Wire.endTransmission();
     
     // Setup the bandwidth
-    Wire.beginTransmission(BMA250::I2CADDR);
+    Wire.beginTransmission(I2CADDR);
     Wire.write(0x10);
-    Wire.write(m_bandwidth);
+    Wire.write(t_bandwidth);
     Wire.endTransmission();
   }
   
@@ -70,10 +79,10 @@ public:
   { 
     uint8_t readBuffer[8];
     // Read the 7 data bytes from the BMA250
-    Wire.beginTransmission(BMA250::I2CADDR);
+    Wire.beginTransmission(I2CADDR);
     Wire.write(0x02);
     Wire.endTransmission();
-    Wire.requestFrom(BMA250::I2CADDR,7);
+    Wire.requestFrom(I2CADDR,7);
     
     for(int i = 0; i < 7;i++)
     {
@@ -95,16 +104,9 @@ public:
     m_temperature = (readBuffer[6] * 0.5f) + 24.0f;
   }
 private:
-  static Bandwidth const BANDWIDTH_DEFAULT = BANDWIDTH_7_81_HZ;
-  static int const I2CADDR = 0x18;
-  static Range const RANGE_DEFAULT = RANGE_2G;
-
   uint16_t m_accelX;
   uint16_t m_accelY;
   uint16_t m_accelZ;
-
-  Bandwidth const m_bandwidth;
-  Range const m_range;
   
   float m_temperature;
 };
