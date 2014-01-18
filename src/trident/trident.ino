@@ -90,10 +90,10 @@ void loop()
   if(timeSince_ms(gs_bmaPost) >= TRIDENT_ACL_POST_PERIOD_MS)
   {
 #ifdef TRIDENT_OUTPUT_NETWORK
-    gs_tempoDB.postSeriesUINT16(TempoDB::ACL_X, gs_bma.accelX(), millis(), 100);
-    gs_tempoDB.postSeriesUINT16(TempoDB::ACL_Y, gs_bma.accelY(), millis(), 100);
-    gs_tempoDB.postSeriesUINT16(TempoDB::ACL_Z, gs_bma.accelZ(), millis(), 100);
-    gs_tempoDB.postSeriesDouble(TempoDB::ACL_TEMPERATURE, gs_bma.temperature(), millis(), 100);
+    gs_tempoDB.postSeriesUInt32(TempoDBSeries::ACL_X, gs_bma.accelX(), millis(), 100);
+    gs_tempoDB.postSeriesUInt32(TempoDBSeries::ACL_Y, gs_bma.accelY(), millis(), 100);
+    gs_tempoDB.postSeriesUInt32(TempoDBSeries::ACL_Z, gs_bma.accelZ(), millis(), 100);
+    gs_tempoDB.postSeriesDouble(TempoDBSeries::ACL_TEMPERATURE, gs_bma.temperature(), millis(), 100);
 #endif
 #ifdef TRIDENT_OUTPUT_SERIAL
     TRIDENT_POST("ACL-X: "+String(gs_bma.accelX()));
@@ -109,8 +109,12 @@ void loop()
   if(timeSince_ms(gs_gpsPost) >= TRIDENT_GPS_POST_PERIOD_MS)
   {
 #ifdef TRIDENT_OUTPUT_NETWORK
-    gs_tempoDB.postSeriesDouble(TempoDB::GPS_LATITUDE, gs_gps.data().location.lat(), millis(), 100);
-    gs_tempoDB.postSeriesDouble(TempoDB::GPS_LONGITUDE, gs_gps.data().location.lng(), millis(), 100);
+    gs_tempoDB.postSeriesDouble(TempoDBSeries::GPS_LATITUDE, gs_gps.data().location.lat(), millis(), 100);
+    gs_tempoDB.postSeriesDouble(TempoDBSeries::GPS_LONGITUDE, gs_gps.data().location.lng(), millis(), 100);
+    gs_tempoDB.postSeriesUInt32(TempoDBSeries::GPS_SATELLITES, gs_gps.data().satellites.value(), millis(), 100);
+    gs_tempoDB.postSeriesDouble(TempoDBSeries::GPS_SPEED, gs_gps.data().speed.mps(), millis(), 100);
+    gs_tempoDB.postSeriesDouble(TempoDBSeries::GPS_COURSE, gs_gps.data().course.deg(), millis(), 100);
+    gs_tempoDB.postSeriesDouble(TempoDBSeries::GPS_ALTITUDE, gs_gps.data().altitude.meters(), millis(), 100);
 #endif
 #ifdef TRIDENT_OUTPUT_SERIAL
     TRIDENT_POST("GPS-Latitude: "+String((int)gs_gps.data().location.lat()));
@@ -131,10 +135,18 @@ void loop()
   {
 #ifdef TRIDENT_OUTPUT_NETWORK
 #ifdef TRIDENT_HMD
-    gs_tempoDB.postSeriesDouble(TempoDB::HMD_HUMIDITY, gs_tmphmd.humidity(), millis(), 100);
+    gs_tempoDB.postSeriesDouble(TempoDBSeries::HMD_HUMIDITY, gs_tmphmd.humidity(), millis(), 100);
 #endif
 #ifdef TRIDENT_TMP
-    gs_tempoDB.postSeriesDouble(TempoDB::TMP_TEMPERATURE, gs_tmphmd.temperature(), millis(), 100);
+    gs_tempoDB.postSeriesDouble(TempoDBSeries::TMP_TEMPERATURE, gs_tmphmd.temperature(), millis(), 100);
+#endif
+#endif
+#ifdef TRIDENT_OUTPUT_SERIAL
+#ifdef TRIDENT_HMD
+    Serial.println("HMD: "+String(gs_tmphmd.humidity()));
+#endif
+#ifdef TRIDENT_TMP
+    Serial.println("TMP: "+String(gs_tmphmd.temperature()));
 #endif
 #endif
     gs_tmphmdPost = millis();

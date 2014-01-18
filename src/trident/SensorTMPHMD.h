@@ -1,18 +1,15 @@
 #ifndef _SENSOR_TMPHMD_H_
 #define _SENSOR_TMPHMD_H_
-
+#include "pins.h"
 #include "globals.h"
 
 #include <Sensirion.h>
-
-PROGMEM static int const SENSORGPS_PIN_DATA=5;
-PROGMEM static int const SENSORGPS_PIN_CLOCK=6;
 
 class SensorTMPHMD
 {
 public:
   SensorTMPHMD()
-  :m_humidity(0),m_temperature(0),m_sensor(SENSORGPS_PIN_DATA, SENSORGPS_PIN_CLOCK),m_status(REQUESTED_NOTHING)
+  :m_humidity(0),m_temperature(0),m_sensor(TMPHMD_PIN_DATA, TMPHMD_PIN_CLOCK),m_status(REQUESTED_NOTHING)
   {
   }
   
@@ -21,14 +18,14 @@ public:
     return m_humidity;
   }
   
+  void setup()
+  {
+    TRIDENT_INFO("TMPHMD-"+String(TRIDENT_TMPHMD_POST_PERIOD_MS));
+  }
+  
   float temperature() const
   {
     return m_temperature;
-  }
-  
-  void setup()
-  {
-    TRIDENT_INFO("TMPHMD");
   }
   
   void update()
@@ -40,6 +37,7 @@ public:
         m_temperature = m_sensor.calcTemp(m_data);
         m_sensor.meas(HUMI, &m_data, false);
         m_status = REQUESTED_HUMIDITY;
+        TRIDENT_INFO("HT HMD");
       }
       else
       {
@@ -49,6 +47,7 @@ public:
         }
         m_sensor.meas(TEMP, &m_data, false);
         m_status = REQUESTED_TEMPERATURE;
+        TRIDENT_INFO("HT TMP");
       }
     }
     else
@@ -57,6 +56,7 @@ public:
       //Always do first, since humidity depends on it.
       m_sensor.meas(TEMP, &m_data, false);
       m_status = REQUESTED_TEMPERATURE;
+      TRIDENT_INFO("HT TMP");
     }
   }
 private:

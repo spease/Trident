@@ -22,9 +22,9 @@ enum Range
 /**************************************************/
 
 /********************----- BMA250 defaults -----********************/
-PROGMEM static Bandwidth const BMA250_BANDWIDTH_DEFAULT = BMA250_BANDWIDTH_7_81_HZ;
-PROGMEM static int const I2CADDR = 0x18;
-PROGMEM static Range const BMA250_RANGE_DEFAULT = BMA250_RANGE_2G;
+static Bandwidth const BMA250_BANDWIDTH_DEFAULT = BMA250_BANDWIDTH_7_81_HZ;
+static int const I2CADDR = 0x18;
+static Range const BMA250_RANGE_DEFAULT = BMA250_RANGE_2G;
 /**************************************************/
 
 /********************----- CLASS: BMA250 -----********************/
@@ -54,7 +54,7 @@ public:
 
   void setup()
   {
-    TRIDENT_INFO("BMA");
+    TRIDENT_INFO("BMA-"+String(TRIDENT_ACL_POST_PERIOD_MS));
     Wire.begin();
 
     // Setup the range measurement setting

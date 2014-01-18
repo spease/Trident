@@ -1,6 +1,6 @@
 #ifndef _NETWORKCONNECTION_H_
 #define _NETWORKCONNECTION_H_
-
+#include "pins.h"
 #include "globals.h"
 #include <Adafruit_CC3000.h>
 
@@ -13,7 +13,7 @@ class NetworkConnection
 {
 public:
   NetworkConnection()
-  :m_cc(NETWORKCONNECTION_pinCS, NETWORKCONNECTION_pinIRQ, NETWORKCONNECTION_pinVBAT, SPI_CLOCK_DIV2),m_status(STATUS_DISCONNECTED)
+  :m_cc(CC3000_SPI_CS, CC3000_IRQ, CC3000_VBAT, SPI_CLOCK_DIV2),m_status(STATUS_DISCONNECTED)
   {}
   
   bool acquire(uint32_t const i_timeStart_ms, uint32_t const i_duration_ms);
@@ -28,12 +28,7 @@ public:
     return m_status == STATUS_CONNECTED;
   }
   
-  void lost()
-  {
-    m_cc.disconnect();
-    m_status = STATUS_DISCONNECTED;
-    TRIDENT_INFO(F("NW lost"));
-  }
+  void lost();
   
   void setup()
   {

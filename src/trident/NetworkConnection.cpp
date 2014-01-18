@@ -2,20 +2,15 @@
 
 bool NetworkConnection::acquire(uint32_t const i_timeStart_ms, uint32_t const i_duration_ms)
 { 
-  while(m_status != STATUS_CONNECTED)
+  while(timeSince_ms(i_timeStart_ms) < i_duration_ms)
   {
-    /***** Check time *****/
-    if(timeSince_ms(i_timeStart_ms) >= i_duration_ms)
-    {
-      return false;
-    }
-    
-    /***** Begin Scanning *****/
     if(m_status == STATUS_DISCONNECTED)
     {
-      TRIDENT_INFO(F("NW Scan"));
-      m_cc.scanSSIDs(4000);
+      /***** Begin Scanning *****/
+      m_cc.scanSSIDs(NETWORKCONNECTION_timeout_ms);
+      m_timeLastActivity = millis();
       m_status = STATUS_SCANNING;
+      TRIDENT_INFO(F("NW Scan"));
     }
     else if(m_status == STATUS_SCANNING)
     {
@@ -48,6 +43,10 @@ bool NetworkConnection::acquire(uint32_t const i_timeStart_ms, uint32_t const i_
             }
           }
         }
+        else if(timeSince_ms(m_timeLastActivity) > NETWORKCONNECTION_timeout_ms)
+        {
+          this->lost();
+        }
       }
       
       return false;
@@ -77,7 +76,20 @@ bool NetworkConnection::acquire(uint32_t const i_timeStart_ms, uint32_t const i_
         this->lost();
       }
     }
+    else if(m_status == STATUS_CONNECTED)
+    {
+      if(!m_cc.checkConnected())
+      {
+        this->lost();
+      }
+      return true;
+    }
   }
-  
-  return true;
+}
+
+void NetworkConnection::lost()
+{
+  m_cc.disconnect();
+  m_status = STATUS_DISCONNECTED;
+  TRIDENT_INFO(F("NW lost"));
 }

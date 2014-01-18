@@ -1,21 +1,17 @@
 #ifndef _SensorGPS_H_
 #define _SensorGPS_H_
-
+#include "pins.h"
 #include "globals.h"
 #include <TinyGPS++.h>
 #include <SoftwareSerial.h>
 
 PROGMEM static int const SENSORGPS_BAUD = 9600;
-PROGMEM static int const SENSORGPS_pinPower = A3;
-PROGMEM static int const SENSORGPS_pinPowerStatus = A2;
-PROGMEM static int const SENSORGPS_pinRX = A1;
-PROGMEM static int const SENSORGPS_pinTX = A0;
 
 class SensorGPS
 {
 public:
   SensorGPS()
-  :m_link(SENSORGPS_pinRX, SENSORGPS_pinTX)
+  :m_link(GPS_SERIAL_RX, GPS_SERIAL_TX)
   {}
   
   TinyGPSPlus &data()
@@ -25,18 +21,18 @@ public:
   
   void setup()
   {
-    TRIDENT_INFO(F("GPS"));
+    TRIDENT_INFO("GPS-"+String(TRIDENT_GPS_POST_PERIOD_MS));
     
-    pinMode(SENSORGPS_pinPower, OUTPUT);
-    pinMode(SENSORGPS_pinPowerStatus, INPUT);
-    digitalWrite(SENSORGPS_pinPower, LOW);
+    pinMode(GPS_POWER, OUTPUT);
+    pinMode(GPS_POWERSTATUS, INPUT);
+    digitalWrite(GPS_POWER, LOW);
     delay(5);
-    if(digitalRead(SENSORGPS_pinPowerStatus) == LOW)
+    if(digitalRead(GPS_POWERSTATUS) == LOW)
     {
       //Wake module
-      digitalWrite(SENSORGPS_pinPower, HIGH);
+      digitalWrite(GPS_POWER, HIGH);
       delay(5);
-      digitalWrite(SENSORGPS_pinPower, LOW);
+      digitalWrite(GPS_POWER, LOW);
     }
     
     m_link.begin(SENSORGPS_BAUD);
