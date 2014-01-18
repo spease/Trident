@@ -1,9 +1,9 @@
 [submodule "ext/TinyGPSPlus"]
 	path = ext/TinyGPSPlus
-	url = https://github.com/mikalhart/TinyGPSPlus.git
+	url = https://github.com/spease/TinyGPSPlus.git
 [submodule "ext/Adafruit_CC3000_Library"]
 	path = ext/Adafruit_CC3000_Library
-	url = https://github.com/adafruit/Adafruit_CC3000_Library.git
+	url = https://github.com/spease/Adafruit_CC3000_Library.git
 [submodule "ext/Sensirion"]
 	path = ext/Sensirion
 	url = https://github.com/spease/Sensirion.git
