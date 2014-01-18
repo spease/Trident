@@ -82,8 +82,8 @@ public:
     Wire.beginTransmission(I2CADDR);
     Wire.write(0x02);
     Wire.endTransmission();
-    Wire.requestFrom(I2CADDR,7);
     
+    Wire.requestFrom(I2CADDR,7);
     for(int i = 0; i < 7;i++)
     {
       readBuffer[i] = Wire.read();

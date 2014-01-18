@@ -1,6 +1,6 @@
 #include "Socket.h"
 
-static char const NEWLINE[] = {'\r','\n'};
+#include "utility/cc3000_common.h"
 
 Socket::Socket()
 :m_socketFD(-1)
@@ -17,7 +17,20 @@ Socket::~Socket()
 
 bool Socket::available() const
 {
-  return false;
+  timeval timeout;
+  fd_set fdArray = {0};
+  FD_SET(m_socketFD, &fdArray);
+  
+  timeout.tv_sec = 0;
+  timeout.tv_usec = 5000;
+  
+  int16_t selectResult = select(m_socketFD+1, &fdArray, NULL, NULL, &timeout);
+  if(selectResult != 1)
+  {
+    return false;
+  }
+  
+  return true;
 }
 
 void Socket::close()
@@ -41,12 +54,13 @@ bool Socket::connect(uint32_t const i_ip, uint16_t const i_port)
   }
   
   /***** Set non-blocking *****/
+  /*
   socketResult = setsockopt(socketFD, SOL_SOCKET, SOCKOPT_RECV_NONBLOCK, SOCK_ON, sizeof(SOCK_ON));
   if(socketResult != 0)
   {
     TRIDENT_ERROR(F("S blk"));
     return false;
-  }
+  }*/
   
   /***** Build Address *****/
   socketAddress.sa_family = AF_INET;
@@ -98,7 +112,6 @@ void Socket::print(__FlashStringHelper const * const i_string)
       ++stringPosition;
       if(txBuffer[txBufferLength] == '\0')
       {
-        ++txBufferLength;
         stringPosition = 0;
         break;
       }
@@ -115,10 +128,10 @@ void Socket::print(__FlashStringHelper const * const i_string)
 
 void Socket::println()
 {
-  ::send(m_socketFD, NEWLINE, sizeof(NEWLINE), 0);
+  ::send(m_socketFD, "\r\n", 2, 0);
 }
 
-void Socket::println(char const * const i_string)
+void Socket::print(char const * const i_string)
 {
   size_t stringLength = 0;
   if(i_string == NULL)
@@ -128,27 +141,41 @@ void Socket::println(char const * const i_string)
   
   stringLength = strlen(i_string);
   ::send(m_socketFD, i_string, stringLength, 0);
-  ::send(m_socketFD, NEWLINE, sizeof(NEWLINE), 0);
+}
+
+void Socket::println(char const * const i_string)
+{
+  this->print(i_string);
+  ::send(m_socketFD, "\r\n", 2, 0);
 }
 
 void Socket::println(__FlashStringHelper const * const i_string)
 {
   this->print(i_string);
-  ::send(m_socketFD, NEWLINE, sizeof(NEWLINE), 0);
+  ::send(m_socketFD, "\r\n", 2, 0);
 }
 
 void Socket::println(size_t const i_integer)
 {
-  char txBuffer[16];
-  size_t txBufferLength=0;
+  char txBuffer[32];
+  
+  /***** Generate integer *****/
   itoa(i_integer, txBuffer, 10);
-  txBufferLength = strlen(txBuffer);
-  memcpy(&txBuffer[txBufferLength], NEWLINE, sizeof(NEWLINE));
-  txBufferLength += sizeof(NEWLINE);
-  ::send(m_socketFD, txBuffer, txBufferLength, 0);
+  
+  /***** Send it *****/
+  this->print(txBuffer);
+  ::send(m_socketFD, "\r\n", 2, 0);
 }
 
-int32_t Socket::read(char *i_buffer, size_t const i_bufferLength)
+uint8_t Socket::read()
 {
-  return 0;
+  uint8_t buffer[50]={0};
+  int16_t recvResult=recv(m_socketFD, &buffer, 50, 0);
+  if(recvResult == -57)
+  {
+    this->close();
+    return buffer[0];
+  }
+  
+  return buffer[0];
 }

@@ -22,12 +22,13 @@ public:
   bool connected() const;
   
   void print(__FlashStringHelper const * const i_string);
+  void print(char const * const i_string);
   void println(char const * const i_string);
   void println(__FlashStringHelper const * const i_string);
   void println(size_t const i_integer);
   void println();
   
-  int32_t read(char *i_buffer=NULL, size_t const i_bufferLength=0);
+  uint8_t read();
 private:
   int32_t m_socketFD;
 };

@@ -27,7 +27,10 @@ public:
   
   void update(uint32_t const i_timeStart_ms, uint32_t const i_budget_ms)
   {
+    size_t dataRead=0;
     m_network.update(i_timeStart_ms, i_budget_ms);
+    
+    cc3k_int_poll();
     
     while(timeSince_ms(i_timeStart_ms) < i_budget_ms)
     {
@@ -37,11 +40,17 @@ public:
       }
       else if(m_socket.available())
       {
-        TRIDENT_INFO(F("HTTP Read"));
         m_socket.read();
-        m_timeLastRead = millis();
-        this->setResponseExpected(false);
+        ++dataRead;
       }
+    }
+    
+    if(dataRead)
+    {
+      TRIDENT_INFO(F("HTTP Read: "));
+      TRIDENT_INFO(dataRead);
+      m_timeLastRead = millis();
+      this->setResponseExpected(false);
     }
   }
   
@@ -86,6 +95,7 @@ private:
   };
   
   __FlashStringHelper const * const m_authBase64;
+  //Adafruit_CC3000_Client m_socket;
   Socket m_socket;
   __FlashStringHelper const * const m_domain;
   uint8_t m_flags;

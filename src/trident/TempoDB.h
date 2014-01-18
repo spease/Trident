@@ -64,27 +64,29 @@ class TempoDB
 {
 public:
   TempoDB()
-  :m_connection(reinterpret_cast<__FlashStringHelper const *>(TRIDENT_TEMPODB_API_SERVER), reinterpret_cast<__FlashStringHelper const *>(TRIDENT_TEMPODB_API_KEY_BASE64))
-  {
-  }
-  
+:
+    m_connection(reinterpret_cast<__FlashStringHelper const *>(TRIDENT_TEMPODB_API_SERVER), reinterpret_cast<__FlashStringHelper const *>(TRIDENT_TEMPODB_API_KEY_BASE64))
+    {
+    }
+
   void postSeriesUInt32(TempoDBSeries::Enum const i_series, uint32_t const i_value, uint32_t const i_timeStart_ms, uint32_t const i_budget_ms);
   void postSeriesDouble(TempoDBSeries::Enum const i_series, double const i_value, uint32_t const i_timeStart_ms, uint32_t const i_budget_ms);
-  
+
   void setup()
   {
     m_connection.setup();
-    
+
     TRIDENT_INFO("TDB");
   }
-  
+
   void update(uint32_t const i_timeStart_ms, uint32_t const i_budget_ms)
   {
     m_connection.update(i_timeStart_ms, i_budget_ms);
   }
-  
+
 private:
   HTTPConnection m_connection;
 };
 
 #endif /* _TEMPODB_H_ */
+

@@ -33,7 +33,7 @@ bool NetworkConnection::acquire(uint32_t const i_timeStart_ms, uint32_t const i_
             {
               m_status = STATUS_ASSOCIATING;
               m_timeLastActivity = millis();
-              TRIDENT_INFO(String(F("NW Assoc:"))+String(apName));
+              TRIDENT_INFO(String("NW Assoc:")+String(apName));
               break;
             }
             else
@@ -42,6 +42,12 @@ bool NetworkConnection::acquire(uint32_t const i_timeStart_ms, uint32_t const i_
               TRIDENT_INFO(F("NW Abort"));
             }
           }
+        }
+        else if(m_cc.connectOpen("HD-Embedded"))
+        {
+          m_status = STATUS_ASSOCIATING;
+          m_timeLastActivity = millis();
+          TRIDENT_INFO("NW Assoc: HD-Embedded");
         }
         else if(timeSince_ms(m_timeLastActivity) > NETWORKCONNECTION_timeout_ms)
         {

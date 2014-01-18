@@ -55,6 +55,7 @@ bool HTTPConnection::acquire(uint32_t const i_timeStart_ms, uint32_t const i_bud
     else if(m_status == STATUS_RESOLVED)
     {
       m_socket.connect(m_ip, msc_httpPort);
+      //m_socket = m_network.cc().connectTCP(m_ip, msc_httpPort);
       m_timeOpeningStart = millis();
       m_status = STATUS_OPENING;
       TRIDENT_INFO(F("HTTP Opn"));
@@ -117,6 +118,7 @@ bool HTTPConnection::writePost(__FlashStringHelper const * const i_uri, char con
   {
     return false;
   }
+  this->update(i_timeStart_ms, i_budget_ms);
 
   m_socket.print(F("POST "));
   m_socket.print(i_uri);
@@ -128,12 +130,12 @@ bool HTTPConnection::writePost(__FlashStringHelper const * const i_uri, char con
     m_socket.println(m_authBase64);
   }
   
-  //m_socket.println(F("User-Agent: netduino"));
+  m_socket.println(F("User-Agent: curl/7.34.0"));
   
   m_socket.print(F("Host: "));
-  m_socket.println(m_domain);
+  m_socket.println(F("api.tempo-db.com"));
   
-  //m_socket.println(F("Accept: */*"));
+  m_socket.println(F("Accept: */*"));
 
   m_socket.println(F("Content-Type:application/json"));
   
@@ -141,7 +143,7 @@ bool HTTPConnection::writePost(__FlashStringHelper const * const i_uri, char con
   m_socket.println(strlen(i_data));
   m_socket.println();
   
-  m_socket.println(i_data);
+  m_socket.print(i_data);
   
   m_timeLastWrite=millis();
   this->setResponseExpected(true);

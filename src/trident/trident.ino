@@ -69,21 +69,23 @@ void setup()
 #ifdef TRIDENT_OUTPUT_NETWORK
   gs_tempoDB.setup();
 #endif
+
+  cli();
+  TCCR1A = 0;
+  TCCR1B = 0;
+  TCNT1 = 0;
+  
+  OCR1A = 15624;
+  TCCR1B |= (1<<WGM12);
+  TCCR1B |= (1<<CS12)|(1<<CS10);
+  TIMSK1 |= (1<<OCIE1A);
+  sei();
 }
 
 void loop()
 {
 #ifdef TRIDENT_OUTPUT_NETWORK
   gs_tempoDB.update(millis(), 100);
-#endif
-#ifdef TRIDENT_ACL
-  gs_bma.update();
-#endif
-#ifdef TRIDENT_GPS
-  gs_gps.update(millis(), 100);
-#endif
-#if defined(TRIDENT_TMP) || defined(TRIDENT_HMD)
-  gs_tmphmd.update();
 #endif
   
 #ifdef TRIDENT_ACL
@@ -154,3 +156,16 @@ void loop()
 #endif
 }
 
+ISR(TIMER1_COMPA_vect)
+{
+  sei();
+#ifdef TRIDENT_ACL
+  gs_bma.update();
+#endif
+#ifdef TRIDENT_GPS
+  gs_gps.update(millis(), 100);
+#endif
+#if defined(TRIDENT_TMP) || defined(TRIDENT_HMD)
+  gs_tmphmd.update();
+#endif
+}

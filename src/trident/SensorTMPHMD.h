@@ -56,7 +56,7 @@ public:
       //Always do first, since humidity depends on it.
       m_sensor.meas(TEMP, &m_data, false);
       m_status = REQUESTED_TEMPERATURE;
-      TRIDENT_INFO("HT TMP");
+      //TRIDENT_INFO("HT TMP");
     }
   }
 private:
